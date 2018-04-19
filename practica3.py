@@ -22,13 +22,11 @@ class Automata:
         flag = True
         lista_estados = set(e)
         nueva_lista = set()
-        print(lista_estados, "CONJUNTO E")
         while(flag):
             lista_iterable = lista_estados - nueva_lista
             for estado in lista_iterable:
                 lista_transiciones = self.buscarTransiciones(estado)
                 for transicion in lista_transiciones:
-                    print(str(transicion) + "para estado " + estado)
                     lista_estados.add(transicion[2])
                 nueva_lista.add(estado)
             if len(lista_iterable) is 0:
@@ -41,7 +39,6 @@ class Automata:
             lista_transiciones = self.buscarTransiciones(estado, caracter)
             for transicion in lista_transiciones:
                 lista_estados.add(transicion[2])
-        print(lista_estados, "MOVER") 
         return lista_estados
     
     def ir_a(self, estados, caracter):
@@ -49,32 +46,46 @@ class Automata:
 
     def transformar(self):
         flag = True
-        a = Automata([], self.lenguaje, None, [], [])
+        cont = "A"
+        a = Automata({}, self.lenguaje, None, [], [])
         lista_usados = set()
         lista_nuevos = set()
         lista_cerradura = self.cerradura_epsilon(tuple(self.inicial))
         lista_nuevos.add(tuple(lista_cerradura))
-        a.inicial = list(lista_cerradura)
-        print("Para el estado inicial la cerradura epsilon es: " + str(lista_cerradura))
+        a.estados[cont] = list(lista_cerradura)
+        a.inicial = cont
+        print("Para el estado inicial la cerradura epsilon es: " + str({cont: list(lista_cerradura)}))
         while flag:
             lista_iterable = lista_nuevos - lista_usados
             for estado in lista_iterable:
+                llave_estado = a.getKeys(list(estado))
                 for c in self.lenguaje:
                     lista = self.ir_a(estado, c)
-                    lista_nuevos.add(tuple(lista))
-                    a.transiciones.append([list(estado), c, list(lista)])
+                    llave = a.getKeys(list(lista))
+                    if len(llave) is 0:
+                        cont = chr(ord(cont)+1)
+                        lista_nuevos.add(tuple(lista))
+                        a.estados[cont] = list(lista)
+                        a.transiciones.append([llave_estado, c, cont])
+                    else:
+                        a.transiciones.append([llave_estado, c, llave])
                     print("Para el estado "+ str(estado) +" ir a del caracter "+ c +" es: " + str(lista))
                 lista_usados.add(estado)
             if len(lista_iterable) is 0:
                 flag = False
             else:
                 print("____________________________")
-        [a.estados.append(list(e)) for e in lista_nuevos]
-        for x in a.estados:
+        for key, value in a.estados.items():
             for y in self.final:
-                if y in x and x not in a.final:
-                    a.final.append(x)
+                if y in value and key not in a.final:
+                    a.final.append(key)
         return a
+
+    def getKeys(self, estado):
+        if estado in self.estados.values():
+            return list(self.estados.keys())[list(self.estados.values()).index(estado)]
+        else:
+            return []
 
 #Leer automata y meterlo inicializar el automata
 llaves = ['estados', 'lenguaje', 'inicial', 'final', 'transiciones']
@@ -91,24 +102,3 @@ print(a.lenguaje, "lenguaje")
 print(a.inicial, "inicial")
 print(a.final, "final")
 print(a.transiciones, "transiciones")
-
-#Recibir la cadena a evaluar
-# print("Ingersar cadena a evaluar")
-# cadena = input(">")
-
-# #Empezar a evaluar la cadena
-# cont = 0
-# anterior = []
-# for i, c in enumerate(cadena):
-#     flag = True
-#     while flag:
-#         tValidas = automata.buscarTransiciones(c, cont)
-#         for transicion in tValidas:
-#             automata.nuevoNodo(cont, transicion[0], transicion[2])
-#             if (transicion,c) in anterior:
-#                 flag = False
-#                 print("YA")
-#             else:
-#                 anterior.append((transicion,c))
-#         cont += 1
-# automata.imprimirCaminos(cont)
