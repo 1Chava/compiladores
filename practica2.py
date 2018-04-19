@@ -8,25 +8,21 @@ class Automata:
         self.final = final
         self.transiciones = transiciones
         self.contieneSolucion = 0
-        self.rutas = Nodo(0, inicial)
+        self.rutas = [Nodo(0, inicial)]
 
-    def buscarTransiciones(self, c, i):
-        flag = True
+    def buscarTransiciones(self, estado, char):
         tValidas = []
-        estadoActual = []
-        nodos = self.rutas.getNodos(i)
-        [estadoActual.append(nodo.estadoActual) for nodo in nodos]
         for sublist in self.transiciones:
-            if (sublist[0] in estadoActual and (sublist[1] in c or sublist[1] is "E")):
+            if (sublist[0] == estado.estadoActual) and (sublist[1] == char or sublist[1] == "E"):
                 tValidas.append(sublist)
         return tValidas
 
-    def nuevoNodo(self, i, eAnterior, eNuevo):
-        nAnteriores = self.rutas.getFinales(eAnterior, i)
-        for nAnterior in nAnteriores:
-            nodo = Nodo(i+1, eNuevo, nAnterior)
-            nAnterior.siguientes.append(nodo)
-            print(nodo)
+    def nuevoNodo(self, i, lista):
+        for nAnterior in self.rutas:
+            if nAnterior.estadoActual is lista[0]:
+                nodo = Nodo(i+1, lista[2], nAnterior, lista[1])
+                nAnterior.siguientes.append(nodo)
+                return nodo 
 
     def getFinales(self, eFinal, lCadena):
         return self.rutas.getFinales(eFinal, lCadena)
@@ -46,10 +42,11 @@ class Automata:
 
 
 class Nodo:
-    def __init__(self, indice, estado, padre=None):
+    def __init__(self, indice, estado, padre=None, caracter=None):
         self.padre = padre
         self.indice = indice
         self.estadoActual = estado
+        self.caracter = caracter
         self.siguientes = []
 
     def getNodo(self, i, e):
@@ -84,6 +81,15 @@ class Nodo:
                 if(lista is not []):
                     [result.append(item) for item in lista]
         return result
+
+    def verAnterior(self, estadoActual, caracter):
+        if type(self.padre) is not Nodo:
+            return False
+        else:
+            if self.padre.estadoActual is estadoActual and self.padre.caracter is caracter:
+                return True
+            else:
+                return self.padre.verAnterior(estadoActual, caracter)
     
     def __str__(self):
         if self.padre == None:
@@ -106,17 +112,38 @@ cadena = input(">")
 
 #Empezar a evaluar la cadena
 cont = 0
-anterior = []
+siguientes = []
 for i, c in enumerate(cadena):
     flag = True
     while flag:
-        tValidas = automata.buscarTransiciones(c, cont)
-        for transicion in tValidas:
-            automata.nuevoNodo(cont, transicion[0], transicion[2])
-            if (transicion,c) in anterior:
-                flag = False
-                print("YA")
-            else:
-                anterior.append((transicion,c))
-        cont += 1
-automata.imprimirCaminos(cont)
+        lista_iterable = set(automata.rutas) - set(siguientes) 
+        for estado in lista_iterable:
+            tValidas = automata.buscarTransiciones(estado, c)
+            for transicion in tValidas:
+                nodo = automata.nuevoNodo(cont, transicion)
+                if type(nodo) is Nodo and nodo.verAnterior(nodo.estadoActual, c):
+                    flag = False
+                siguientes.append(nodo)
+            if len(tValidas) is 0:
+                if estado.estadoActual is c:
+                    siguientes.append(estado)
+            cont =+1
+        automata.rutas.clear()
+        for nodo in siguientes:
+            if type(nodo) is Nodo:
+                automata.rutas.append(nodo)
+        siguientes.clear()
+        [print(nodo, c) for nodo in automata.rutas]
+        input("_____________________________________")
+    print("/////////////////////////////////")
+
+flag = False
+for nodo in automata.rutas:
+    if nodo.estadoActual in automata.final:
+        if flag is False:
+            print("Si es aceptada")
+            flag = True
+        print(nodo)
+if flag is False:
+    print("La cadena no es aceptada")
+# automata.imprimirCaminos(cont)
